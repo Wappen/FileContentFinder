@@ -16,14 +16,12 @@ namespace FileContentFinder.Models
         /// <param name="path">The path in which the files should be searched in</param>
         /// <param name="query">The test string that the files must contain</param>
         /// <returns>Returns a list of filenames in the directory</returns>
-        public static async Task<List<string>> FindAsync(string path, string query, bool recursive, bool useRegex)
+        public static async IAsyncEnumerable<string> FindNext(string path, string query, bool recursive, bool useRegex)
         {
             byte[] queryBytes = Encoding.UTF8.GetBytes(query);
-            List<string> matches = new List<string>();
             Stack<string> dirs = new Stack<string>();
             dirs.Push(path);
 
-            
             do
             {
                 string dir = dirs.Pop();
@@ -35,10 +33,12 @@ namespace FileContentFinder.Models
                 string[] subjects = Directory.GetFiles(dir);
 
                 if (query.Length == 0)
-                    return new List<string>(subjects).ConvertAll(s => Path.GetFileName(s));
+                    break;
 
                 for (int i = 0; i < subjects.Length; i++)
                 {
+                    bool matches = false;
+
                     try
                     {
                         using (var stream = File.OpenRead(subjects[i]))
@@ -55,7 +55,7 @@ namespace FileContentFinder.Models
                                 {
                                     if (Regex.IsMatch(Encoding.UTF8.GetString(bytes) + Encoding.UTF8.GetString(prevBytes), query))
                                     {
-                                        matches.Add(Path.GetRelativePath(path, subjects[i]));
+                                        matches = true;
                                         break;
                                     }
                                 }
@@ -63,7 +63,7 @@ namespace FileContentFinder.Models
                                 {
                                     if (ByteArraysContain(bytes, prevBytes, queryBytes))
                                     {
-                                        matches.Add(Path.GetRelativePath(path, subjects[i]));
+                                        matches = true;
                                         break;
                                     }
                                 }
@@ -89,12 +89,14 @@ namespace FileContentFinder.Models
                     {
                         MessageBox.Show("An unknown exception occured. Please contact the developer.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+
+                    if (matches)
+                    {
+                        yield return Path.GetRelativePath(path, subjects[i]);
+                    }
                 }
             }
             while (dirs.Count > 0 && recursive);
-            
-
-            return matches;
         }
 
         /// <summary>

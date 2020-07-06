@@ -1,6 +1,8 @@
 ﻿using FileContentFinder.Models;
+using Ookii.Dialogs.Wpf;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
@@ -25,24 +27,19 @@ namespace FileContentFinder
             }
         }
 
+        public ObservableCollection<ListViewItem> FoundFilesItems { get; set; }
+
+        private bool _search = true;
+
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
 
+            FoundFilesItems = new ObservableCollection<ListViewItem>();
             pathSelect.Path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             Query = "";
-        }
-
-        private List<ListViewItem> ToListViewItem(List<string> list)
-        {
-            var listViewItemList = new List<ListViewItem>();
-            foreach (var item in list)
-            {
-                listViewItemList.Add(new ListViewItem() { Content = item });
-            }
-            return listViewItemList;
         }
 
         private void ListViewItem_ItemClicked(object sender, MouseButtonEventArgs e)
@@ -50,26 +47,57 @@ namespace FileContentFinder
             var item = sender as ListViewItem;
             if (item != null && item.IsSelected)
             {
-                ProcessStartInfo psi = new ProcessStartInfo($@"{pathSelect.Path}\{item.Content as string}");
-                psi.UseShellExecute = true;
-                psi.ErrorDialog = true;
-                try
-                {
-                    Process.Start(psi);
-                }
-                catch (Exception ex) { }
+                string filePath = $@"{pathSelect.Path}\{item.Content as string}";
+
+                if (!System.IO.File.Exists(filePath))
+                    return;
+
+                string argument = "/select, \"" + filePath + "\"";
+
+                Process.Start("explorer.exe", argument);
+
+                //ProcessStartInfo psi = new ProcessStartInfo($@"{pathSelect.Path}\{item.Content as string}");
+                //psi.UseShellExecute = true;
+                //psi.ErrorDialog = true;
+                //try
+                //{
+                //    Process.Start(psi);
+                //}
+                //catch (Exception ex) { }
             }
         }
 
-        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        private async void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            searchButton.IsEnabled = false;
+            _search = true;
 
-            var t = FileFinder.FindAsync(pathSelect.Path, Query, recursiveBox.IsChecked.GetValueOrDefault(), regexBox.IsChecked.GetValueOrDefault());
-            t.ContinueWith((t2) => {
-                fileListView.ItemsSource = ToListViewItem(t2.Result);
-                searchButton.IsEnabled = true;
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+            FoundFilesItems.Clear();
+            fileListView.IsEnabled = false;
+            cancelButton.IsEnabled = true;
+            cancelButton.Visibility = Visibility.Visible;
+            searchButton.Visibility = Visibility.Hidden;
+            progressBar.Visibility = Visibility.Visible;
+            progressBar.IsIndeterminate = true;
+
+            await foreach (var fileName in FileFinder.FindNext(pathSelect.Path, Query, recursiveBox.IsChecked.GetValueOrDefault(), regexBox.IsChecked.GetValueOrDefault()))
+            {
+                if (!_search) break;
+
+                FoundFilesItems.Add(new ListViewItem() { Content = fileName });
+                fileListView.ScrollIntoView(fileListView.Items[fileListView.Items.Count - 1]);
+            }
+
+            cancelButton.Visibility = Visibility.Hidden;
+            searchButton.Visibility = Visibility.Visible;
+            fileListView.IsEnabled = true;
+            progressBar.Visibility = Visibility.Hidden;
+            progressBar.IsIndeterminate = false;
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            cancelButton.IsEnabled = false;
+            _search = false;
         }
     }
 }

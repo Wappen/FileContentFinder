@@ -23,7 +23,7 @@
                 <ColumnDefinition Width="1*" />
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
-            
+
             <CheckBox x:Name="recursiveBox"
                       ToolTip="Enable recursive search. May impact performance."
                       Grid.Column="0"
@@ -37,26 +37,40 @@
         <Label DockPanel.Dock="Top">Path</Label>
         <Views:PathSelector x:Name="pathSelect" DockPanel.Dock="Top" />
 
-        <Button x:Name="searchButton"
-                ToolTip="Start the search."
-                Margin="0, 5"
-                Padding="5"
-                DockPanel.Dock="Top"
-                Click="SearchButton_Click">Search</Button>
+        <Grid DockPanel.Dock="Top">
+            <Button x:Name="searchButton"
+                    ToolTip="Start search."
+                    Margin="0, 5"
+                    Padding="5"
+                    Click="SearchButton_Click">Search</Button>
+            <Button x:Name="cancelButton"
+                    Visibility="Hidden"
+                    ToolTip="Cancel search."
+                    Margin="0, 5"
+                    Padding="5"
+                    Click="CancelButton_Click">Cancel</Button>
+        </Grid>
 
         <Label DockPanel.Dock="Top">Files</Label>
-        <ListView x:Name="fileListView"
-                  DockPanel.Dock="Top">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock />
-                </DataTemplate>
-            </ListView.ItemTemplate>
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
-                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListViewItem_ItemClicked" />
-                </Style>
-            </ListView.ItemContainerStyle>
-        </ListView>
+        <Grid>
+            <ListView x:Name="fileListView"
+                      DockPanel.Dock="Top"
+                      ItemsSource="{Binding FoundFilesItems}">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock />
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListViewItem_ItemClicked" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+            <ProgressBar x:Name="progressBar"
+                         Height="30"
+                         Margin="10"
+                         Visibility="Hidden" />
+        </Grid>
     </DockPanel>
 </Window>

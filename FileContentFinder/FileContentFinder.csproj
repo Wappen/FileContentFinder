@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>icons8-search-folder-48.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
